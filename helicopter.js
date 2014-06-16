@@ -10,6 +10,7 @@
 	var tick = 0;
 	var quadTree ;
 	var PlatformWidth = 100;
+	var score = 0;
 
 	window.requestAnimFrame = function(){
 	    return (
@@ -133,6 +134,8 @@
 		this.collidableWith = "player";
 		this.x = x;
 		this.y = y;
+		this.width = 100;
+		this.height = 200;
 		Vector.call(this,this.x,this.y,0,0);
 
 		this.draw = function(){
@@ -148,6 +151,7 @@
 		player.height = 50;
 		player.type ="player";
 		player.collidableWith = "walls";
+		player.collided = false;
 		player.img = assetsLoaded.imgs["heli"];
 		player.img1 = assetsLoaded.imgs["heli2"];
 		player.image = new Image();
@@ -181,6 +185,10 @@
 				player.image.src = player.img1;
 			}
 
+			if(player.collided){
+				GameOver();
+			}
+
 		};
 
 		player.reset = function(){
@@ -212,7 +220,7 @@
 		var maxLevel = 5;
 		var maxObjects = 10;
 
-		this.level = lvl || 0;
+		var level = lvl || 0;
 		this.nodes = [];
 
 		this.clear = function(){
@@ -344,7 +352,7 @@
 
 			objects.push(object);
 
-			if(objects.length>maxObjects && this.level<maxLevel){
+			if(objects.length>maxObjects && level<maxLevel){
 				if(this.nodes[0] == null){
 					this.split();
 				}
@@ -354,6 +362,7 @@
 					var index = this.getIndex(objects[i]); // Get the index of each element of the objects
 					if(index != -1){
 						this.nodes[index].insert((objects.splice(i,1))[0]);
+						// This node containing the quadtree will have its own boundBox {x,y,width,height} 
 					}
 					else{
 						i++;
@@ -364,17 +373,14 @@
 
 	}
 
-	function animate(){
-		requestAnimFrame(animate);
-		ctx.clearRect(0,0,width,height);
+	function updateTerrain(){
 
 		for(var i=0;i<terrain.length;i++){
 			terrain[i].x -= player.speed;
 			terrain[i].draw();
-			console.log(terrain[i]);
+		//	console.log(terrain[i]);
 		}
 
-	
 		if(terrain[0].x<= -PlatformWidth){
 			terrain.shift();
 			var x = terrain[terrain.length-1].x + 1000;
@@ -382,11 +388,82 @@
 			terrain.push(new walls(x,y));
 		}
 		
-		player.update();
-		player.draw();
+	}
+
+	function GameOver(){
+		
+		//ctx.clearRect(0,0,canvas.width,canvas.height);
+		ctx.font="30px Verdana";
+		var gradient=ctx.createLinearGradient(0,0,canvas.width,0);
+		gradient.addColorStop("0","magenta");
+		gradient.addColorStop("0.5","blue");
+		gradient.addColorStop("1.0","red");
+		// Fill with gradient
+		ctx.fillStyle=gradient;
+		ctx.fillText("GameOver !",canvas.width/2,canvas.height/2);
+		ctx.fillText("You have scored:"+score+"m",canvas.width/2,canvas.height/1.8);
+	}
+
+	function detectCollision(){
+
+		var objects = [];
+		quadTree.getAllobjects(objects);
+
+		for(var x=0;x<objects.length;x++){
+			quadTree.findObjects(obj=[],objects[x]);
+			for(var y=0;y<obj.length;y++){
+
+				if(objects[x].collidableWith == obj[y].type &&
+					objects[x].x<obj[y].x+obj[y].width &&
+					objects[x].x+objects[x].width>obj[y].x &&
+					(objects[x].y+objects[x].height>obj[y].y ||
+						objects[x].y - objects[x].height>obj[y].y)
+					 &&
+					objects[x].y<obj[y].y+obj[y].height 
+					){
+					player.collided = true;
+				}
+			}
+
+		}
+
+	}
+
+	function animate(){
+
+		
+		if(!player.collided){
+			score+=1;			requestAnimFrame(animate);
+			ctx.clearRect(0,0,width,height);
+
+			quadTree.clear();
+			quadTree.insert(player);
+			quadTree.insert(terrain);
+			updateTerrain();
+			player.update();
+			player.draw();
+
+			ctx.font="10px Verdana";
+			ctx.fillText("score:"+score+"m",canvas.width-200,canvas.height);
+
+			detectCollision();
+		}
+
+		else{
+			GameOver();
+		}
+
+//		console.log("all inserted properly");
 	}
 
 	function startGame(){
+
+		quadTree = new QuadTree({
+			x:0,
+			y:0,
+			width:canvas.width,
+			height:canvas.height
+		});
 
 		for(var i=1;i<Math.floor(canvas.width/PlatformWidth)+2 ;i++){
 			var x = i*500;
