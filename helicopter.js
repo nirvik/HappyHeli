@@ -6,10 +6,10 @@
 	var height = canvas.height;
 
 	var player = {};
-	var environment = [];
+	var terrain = [];
 	var tick = 0;
 	var quadTree ;
-	var PlatformWidth = 32;
+	var PlatformWidth = 100;
 
 	window.requestAnimFrame = function(){
 	    return (
@@ -115,18 +115,32 @@
 		this.y+=this.dy;
 	}
 
-	var walls = function(x,y){
+/*
+	var walls = {
 
-		this.type = "walls";
+		type : "walls",
+		collidableWith : "player",
+		draw : function(x,y){
+			ctx.rect(x,y,50,200);
+			ctx.stroke();
+		}
+	};
+*/
+
+	function walls(x,y){
+		
+		this.type = "wall";
 		this.collidableWith = "player";
 		this.x = x;
 		this.y = y;
+		Vector.call(this,this.x,this.y,0,0);
 
 		this.draw = function(){
-			ctx.rect(this.x,this,y,50,200);
-			ctx.stroke();
+			ctx.fillRect(this.x,this.y,100,200);
+			
 		};
 	}
+	walls.prototype = Object.create(Vector.prototype);
 
 	var player = function(player){
 
@@ -140,7 +154,7 @@
 		
 		player.dx = 0;
 		player.dy = 0;
-		player.speed = 6;
+		player.speed = 5;
 
 		player.isThrust = false;
 		player.gravity = 1;
@@ -152,7 +166,7 @@
 			tick+=1;
 			if(KEY_STATUS.space){
 				player.dy = -10;
-				console.log("COMON");
+			//	console.log("COMON");
 			}
 
 			else{
@@ -354,18 +368,20 @@
 		requestAnimFrame(animate);
 		ctx.clearRect(0,0,width,height);
 
-		for(var i=0;i<environment.length;i++){
-		//	environment[i].x -= player.speed;
-		//	environment[i].draw();
-			console.log(environment[i]);
+		for(var i=0;i<terrain.length;i++){
+			terrain[i].x -= player.speed;
+			terrain[i].draw();
+			console.log(terrain[i]);
 		}
 
-		/*
-		if(environment[0].x<= -PlatformWidth){
-			environment.shift();
-			environment.push(new walls(environment[environment.length-1].x+900,300));
+	
+		if(terrain[0].x<= -PlatformWidth){
+			terrain.shift();
+			var x = terrain[terrain.length-1].x + 1000;
+			var y = (Math.random()*350);
+			terrain.push(new walls(x,y));
 		}
-		*/
+		
 		player.update();
 		player.draw();
 	}
@@ -373,9 +389,11 @@
 	function startGame(){
 
 		for(var i=1;i<Math.floor(canvas.width/PlatformWidth)+2 ;i++){
-			
-			environment[i] = new walls(i*100,200);
+			var x = i*500;
+			var y = (Math.random()*350)+50;
+			terrain.push(new walls(x,y));
 		}
+	
 		player.reset();
 		animate();
 	}
