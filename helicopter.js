@@ -177,6 +177,10 @@
 				player.dy += player.gravity;
 			}
 
+			if(player.y>=canvas.height || player.y<-30){
+				player.collided = true;
+			}
+
 			this.advance();
 			if(tick%2==0){
 				player.image.src = player.img;
@@ -433,7 +437,8 @@
 
 		
 		if(!player.collided){
-			score+=1;			requestAnimFrame(animate);
+			score+=1;			
+			requestAnimFrame(animate);
 			ctx.clearRect(0,0,width,height);
 
 			quadTree.clear();
@@ -443,7 +448,7 @@
 			player.update();
 			player.draw();
 
-			ctx.font="10px Verdana";
+			ctx.font="15px Verdana";
 			ctx.fillText("score:"+score+"m",canvas.width-200,canvas.height);
 
 			detectCollision();
