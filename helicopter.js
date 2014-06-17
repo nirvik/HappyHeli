@@ -11,6 +11,7 @@
 	var quadTree ;
 	var PlatformWidth = 100;
 	var score = 0;
+	var FACTOR = 0.5;
 
 	window.requestAnimFrame = function(){
 	    return (
@@ -113,20 +114,8 @@
 	}
 
 	Vector.prototype.advance = function(){
-		this.y+=this.dy;
+		this.y+=FACTOR*this.dy;
 	}
-
-/*
-	var walls = {
-
-		type : "walls",
-		collidableWith : "player",
-		draw : function(x,y){
-			ctx.rect(x,y,50,200);
-			ctx.stroke();
-		}
-	};
-*/
 
 	function walls(x,y){
 		
@@ -139,6 +128,12 @@
 		Vector.call(this,this.x,this.y,0,0);
 
 		this.draw = function(){
+		var gradient=ctx.createLinearGradient(0,0,canvas.width,0);
+		gradient.addColorStop("0","black");
+		gradient.addColorStop("0.5","black");
+		gradient.addColorStop("1.0","red");
+		// Fill with gradient
+		ctx.fillStyle=gradient;
 			ctx.fillRect(this.x,this.y,100,200);
 			
 		};
@@ -147,8 +142,8 @@
 
 	var player = function(player){
 
-		player.width = 50;
-		player.height = 50;
+		player.width = 47;
+		player.height = 28/2;
 		player.type ="player";
 		player.collidableWith = "walls";
 		player.collided = false;
@@ -380,7 +375,7 @@
 	function updateTerrain(){
 
 		for(var i=0;i<terrain.length;i++){
-			terrain[i].x -= player.speed;
+			terrain[i].x -= FACTOR*player.speed;
 			terrain[i].draw();
 		//	console.log(terrain[i]);
 		}
@@ -417,15 +412,19 @@
 			quadTree.findObjects(obj=[],objects[x]);
 			for(var y=0;y<obj.length;y++){
 
+				var width = obj[y].width;
+				var height = obj[y].height;
+
 				if(objects[x].collidableWith == obj[y].type &&
-					objects[x].x<obj[y].x+obj[y].width &&
+					objects[x].x<obj[y].x+width &&
 					objects[x].x+objects[x].width>obj[y].x &&
-					(objects[x].y+objects[x].height>obj[y].y ||
-						objects[x].y - objects[x].height>obj[y].y)
+					(objects[x].y+objects[x].height>=obj[y].y ||
+						objects[x].y - objects[x].height<=obj[y].y+height)
 					 &&
-					objects[x].y<obj[y].y+obj[y].height 
+					objects[x].y<obj[y].y+height 
 					){
 					player.collided = true;
+					console.log("player is @ ("+player.x+","+player.y+") && player ka boundary "+(player.x+player.width)+","+(player.y+player.height)+" && object ka x : "+objects[x].x+","+ (objects[x].x+width) +" object ka y : "+objects[x].y+","+(objects[x].y+height));
 				}
 			}
 
@@ -444,17 +443,18 @@
 			quadTree.clear();
 			quadTree.insert(player);
 			quadTree.insert(terrain);
+
 			updateTerrain();
 			player.update();
 			player.draw();
-
 			ctx.font="15px Verdana";
-			ctx.fillText("score:"+score+"m",canvas.width-200,canvas.height);
-
+			ctx.fillText("score:"+score+"m",canvas.width/2,canvas.height);
 			detectCollision();
+
 		}
 
 		else{
+
 			GameOver();
 		}
 
